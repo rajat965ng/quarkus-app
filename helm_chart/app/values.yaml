@@ -83,15 +83,25 @@ tolerations: []
 affinity: {}
 
 
-livenessProbe:
-  httpGet:
-    path: /v1/hello
-    port: http
-  initialDelaySeconds: 60
-  periodSeconds: 3  
-readinessProbe:
-  httpGet:
-    path: /v1/hello
-    port: http
-  initialDelaySeconds: 60
-  periodSeconds: 3  
+# livenessProbe:
+#   httpGet:
+#     path: /v1/hello
+#     port: http
+#   initialDelaySeconds: 60
+#   periodSeconds: 3  
+# readinessProbe:
+#   httpGet:
+#     path: /v1/hello
+#     port: http
+#   initialDelaySeconds: 60
+#   periodSeconds: 3 
+
+
+livenessProbe: {}
+readinessProbe: {}
+
+env:
+  - name: DEMO_GREETING
+    value: "Hello from the environment"
+  - name: DEMO_FAREWELL
+    value: "Such a sweet sorrow"   
