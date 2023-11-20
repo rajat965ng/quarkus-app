@@ -1,0 +1,120 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: maven-pipeline
+spec:
+  params:
+    - name: repo-url
+      type: string
+      description: The git repo to clone from.
+    - name: registry
+      type: string
+    - name: charts_dir
+      type: string
+    - name: release_name
+      type: string
+    - name: revision
+      type: string
+  workspaces:
+    - name: shared-data
+      description: |
+        This workspace contains the cloned repo files, so they can be read by the next task.
+  tasks:
+    - name: fetch-source
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-data
+          subPath: $(params.release_name)
+      params:
+        - name: url
+          value: $(params.repo-url)
+        - name: revision
+          value: $(params.revision)
+        - name: subdirectory
+          value: ""
+        - name: deleteExisting
+          value: "true"
+    - name: maven-run
+      taskRef:
+        name: maven
+      runAfter:
+        - fetch-source
+      workspaces:
+        - name: maven-settings
+          workspace: shared-data
+          subPath: settings
+        - name: source
+          workspace: shared-data
+          subPath: $(params.release_name)
+        - name: maven-local-repo
+          workspace: shared-data
+          subPath: .m2
+      params:
+        - name: MAVEN_IMAGE
+          value: maven:3.8.5-openjdk-17
+        - name: GOALS
+          value:
+            - clean
+            - install
+            - -DskipTests
+    - name: build-push
+      runAfter: ["maven-run"]
+      taskRef:
+        name: kaniko
+      workspaces:
+      - name: source
+        workspace: shared-data
+        subPath: $(params.release_name)
+      params:
+      - name: IMAGE
+        value: $(params.registry)/$(context.pipelineRun.namespace)/$(params.release_name):$(tasks.fetch-source.results.commit)
+      - name: EXTRA_ARGS
+        value: 
+        - --skip-tls-verify-registry=$(params.registry)
+    - name: deploy
+      runAfter: ["build-push"]
+      taskRef:
+        name: helm-upgrade-from-source
+      workspaces:
+      - name: source
+        workspace: shared-data
+        subPath: $(params.release_name)
+      params:
+      - name: charts_dir
+        value: $(params.charts_dir)
+      - name: release_name
+        value: $(params.release_name)
+      - name: overwrite_values
+        value: "image.repository=$(params.registry)/$(context.pipelineRun.namespace)/$(params.release_name),image.tag=$(tasks.fetch-source.results.commit)"
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: clone-read-run
+  annotations:
+    version: v1.2
+spec:
+  pipelineRef:
+    name: maven-pipeline
+  workspaces:
+  - name: maven-settings
+    emptyDir: {}
+  - name: shared-data
+    persistentvolumeclaim:
+        claimName: shared-data
+  - name: maven-local-m2
+    persistentvolumeclaim:
+        claimName: shared-data                
+  params:
+    - name: repo-url
+      value: https://github.com/rajat965ng/quarkus-app.git
+    - name: revision
+      value: GIT_SHA
+    - name: registry
+      value: image-registry.openshift-image-registry.svc:5000
+    - name: charts_dir
+      value: helm_chart/app
+    - name: release_name
+      value: demoapp
