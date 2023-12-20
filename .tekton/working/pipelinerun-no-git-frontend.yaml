@@ -1,0 +1,75 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: frontend-pipeline
+spec:
+  params:
+    - name: revision
+      type: string      
+    - name: repo-url
+      type: string
+      description: The git repo to clone from.
+    - name: registry
+      type: string
+    - name: charts_dir
+      type: string
+    - name: release_name
+      type: string
+  workspaces:
+    - name: shared-data
+      description: |
+        This workspace contains the cloned repo files, so they can be read by the next task.
+    - name: git-credentials
+      description: Git credentials    
+  tasks:
+    - name: fetch-source
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-data
+          subPath: $(params.release_name)
+        - name: basic-auth
+          workspace: git-credentials  
+      params:
+        - name: revision
+          value: $(params.revision)      
+        - name: url
+          value: $(params.repo-url)
+        - name: subdirectory
+          value: ""
+        - name: deleteExisting
+          value: "true"
+    - name: build-push
+      runAfter: ["fetch-source"]
+      taskRef:
+        name: buildah-1-12-0
+        kind: ClusterTask
+      workspaces:
+      - name: source
+        workspace: shared-data
+        subPath: $(params.release_name)
+      params:
+      - name: TLSVERIFY
+        value: "false"
+      - name: PUSH_EXTRA_ARGS
+        value: "--creds <OCI_REGISTRY_USERNAME>:<OCI_REGISTRY_PASSWORD>"
+      - name: BUILD_EXTRA_ARGS
+        value: "--creds <OCI_REGISTRY_USERNAME>:<OCI_REGISTRY_PASSWORD> --ulimit nofile=4096:4096"
+      - name: IMAGE
+        value: $(params.registry)/$(context.pipelineRun.namespace)/$(params.release_name):$(tasks.fetch-source.results.commit)
+    - name: deploy
+      runAfter: ["build-push"]
+      taskRef:
+        name: helm-upgrade-from-source
+      workspaces:
+      - name: source
+        workspace: shared-data
+        subPath: $(params.release_name)
+      params:
+      - name: charts_dir
+        value: $(params.charts_dir)
+      - name: release_name
+        value: $(params.release_name)
+      - name: overwrite_values
+        value: "image.repository=$(params.registry)/$(context.pipelineRun.namespace)/$(params.release_name),image.tag=$(tasks.fetch-source.results.commit)"

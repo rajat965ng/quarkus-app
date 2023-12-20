@@ -1,0 +1,27 @@
+FROM node:19.5.0-alpine AS build
+
+WORKDIR /dist/src/app
+COPY . .
+
+ENV http_proxy=http://PROXY_IP:PROXY_PORT
+ENV https_proxy=http://PROXY_IP:PROXY_PORT
+RUN npm config set registry https://registry.npmjs.org
+RUN npm config set proxy http://PROXY_IP:PROXY_PORT
+RUN npm config set https-proxy http://PROXY_IP:PROXY_PORT
+RUN npm config set strict-ssl false
+
+RUN npm install
+RUN  npm run build --prod  
+
+### STAGE 2:RUN ###
+# Defining nginx image to be used
+FROM nginx:latest AS ngi
+
+# Copying compiled code and nginx config to different folder
+# NOTE: This path may change according to your project's output folder 
+COPY --from=build /dist/src/app/dist/ACTUAL_BUILD_LOCATION /usr/share/nginx/html/NGINX_BUILD_PATH
+RUN sed -i 's/<base href="\/">/<base href="\/APP_CONTEXT_PATH_WITHOUT_SLASH\/"/g' /usr/share/nginx/html/NGINX_BUILD_PATH/index.html
+
+EXPOSE 80
+
+
