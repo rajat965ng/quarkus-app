@@ -1,0 +1,40 @@
+{{- if .Values.blueGreen.enabled }}
+{{- if .Values.blueGreen.blue.tag }}
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: {{ include "app.fullname" . }}-{{ .Values.blueGreen.blue.name }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+spec:
+  host: {{ .Values.blueGreen.blue.host }}
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+  port:
+    targetPort: {{ .Values.service.port }}-tcp
+  to:
+    kind: Service
+    name: {{ include "app.fullname" . }}-{{ .Values.blueGreen.blue.name }}
+---
+{{- end }}
+{{- if .Values.blueGreen.green.tag }}
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: {{ include "app.fullname" . }}-{{ .Values.blueGreen.green.name }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+spec:
+  host: {{ .Values.blueGreen.green.host }}
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+  port:
+    targetPort: {{ .Values.service.port }}-tcp
+  to:
+    kind: Service
+    name: {{ include "app.fullname" . }}-{{ .Values.blueGreen.green.name }}
+---
+{{- end }}
+{{- end }}

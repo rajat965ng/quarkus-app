@@ -104,4 +104,25 @@ env:
   - name: DEMO_GREETING
     value: "Hello from the environment"
   - name: DEMO_FAREWELL
-    value: "Such a sweet sorrow"   
+    value: "Such a sweet sorrow"
+
+blueGreen:
+  enabled: true
+  blue:
+    name: blue
+    host: ""
+    tag: abc123
+    env:
+      - name: DEMO_GREETING
+        value: "Hello from the blue environment"
+      - name: DEMO_FAREWELL
+        value: "Such a sweet sorrow"
+  green:
+    name: green
+    host: ""
+    tag: xyz123
+    env:
+      - name: DEMO_GREETING
+        value: "Hello from the green environment"
+      - name: DEMO_FAREWELL
+        value: "Such a sweet sorrow"
