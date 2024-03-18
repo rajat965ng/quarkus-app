@@ -1,0 +1,32 @@
+{{- if .Values.blueGreen.enabled }}
+{{- if .Values.blueGreen.blue.tag }}
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: {{ include "app.fullname" . }}-{{ .Values.blueGreen.blue.name }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+spec:
+  port:
+    targetPort: http
+  to:
+    kind: Service
+    name: {{ include "app.fullname" . }}-{{ .Values.blueGreen.blue.name }}
+---
+{{- end }}
+{{- if .Values.blueGreen.green.tag }}
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: {{ include "app.fullname" . }}-{{ .Values.blueGreen.green.name }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+spec:
+  port:
+    targetPort: http
+  to:
+    kind: Service
+    name: {{ include "app.fullname" . }}-{{ .Values.blueGreen.green.name }}
+---
+{{- end }}
+{{- end }}

@@ -1,0 +1,35 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: eppms
+  annotations:
+    version: v1.2
+spec:
+  pipelineRef:
+    name: maven-pipeline
+  serviceAccountName: pipeline
+  workspaces:
+    - name: git-secret
+      secret:
+        secretName: my-basic-auth-secret
+    - name: maven-settings
+      emptyDir: {}
+    - name: shared-data
+      persistentvolumeclaim:
+        claimName: shared-data
+    - name: maven-local-m2
+      persistentvolumeclaim:
+        claimName: shared-data
+  params:
+    - name: repo-url
+      value: http://gitrepo01.dcservices.in/git/serbeppms
+    - name: blue_revision
+      value: f06c784f0e57c93d983097c5e0a3a5b4c811540d
+    - name: green_revision
+      value: 20608057899a2ac324911a221c70b7295f247299
+    - name: registry
+      value: image-registry.openshift-image-registry.svc:5000
+    - name: charts_dir
+      value: helm_chart/app
+    - name: release_name
+      value: serb-app
