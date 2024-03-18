@@ -55,6 +55,14 @@ If you want to learn more about building native executables, please consult http
 
 
 ## Setup Tekton Pipeline
+### Create namespace
+```
+oc new-project pipelines-tutorial
+```
+### Verify Service Account
+```
+oc get serviceaccount pipeline
+```
 ### Install Tekton Plugins
 - brew install tekton
 - Plugins: https://hub.tekton.dev/
