@@ -107,7 +107,7 @@ env:
     value: "Such a sweet sorrow"
 
 blueGreen:
-  enabled: true
+  enabled: false
   blue:
     name: blue
     host: ""

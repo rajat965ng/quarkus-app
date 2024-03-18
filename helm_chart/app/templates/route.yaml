@@ -7,12 +7,8 @@ metadata:
   labels:
     {{- include "app.labels" . | nindent 4 }}
 spec:
-  host: {{ .Values.blueGreen.blue.host }}
-  tls:
-    insecureEdgeTerminationPolicy: Redirect
-    termination: edge
   port:
-    targetPort: {{ .Values.service.port }}-tcp
+    targetPort: http
   to:
     kind: Service
     name: {{ include "app.fullname" . }}-{{ .Values.blueGreen.blue.name }}
@@ -26,12 +22,8 @@ metadata:
   labels:
     {{- include "app.labels" . | nindent 4 }}
 spec:
-  host: {{ .Values.blueGreen.green.host }}
-  tls:
-    insecureEdgeTerminationPolicy: Redirect
-    termination: edge
   port:
-    targetPort: {{ .Values.service.port }}-tcp
+    targetPort: http
   to:
     kind: Service
     name: {{ include "app.fullname" . }}-{{ .Values.blueGreen.green.name }}
